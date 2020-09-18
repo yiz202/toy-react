@@ -9,7 +9,11 @@ class ElementWrapper {
             //click
             this.root.addEventListener(RegExp.$1.replace(/^[\s\S]/,c=>c.toLowerCase()),value);
         } else{
-            this.root.setAttribute(name,value)
+            if (name ==='className') {
+                this.root.setAttribute('class',value)
+            } else {
+                this.root.setAttribute(name,value)
+            }
         }
     }
     appendChild(component) {
@@ -54,8 +58,17 @@ export class Component{
         this._range = range; 
     }
     rerender() {
-        this._range.deleteContents();
-        this[RENDER_TO_DOM](this._range);
+        //save old range
+        let oldRange = this._range
+        //
+        let range = document.createRange();
+        range.setStart(oldRange.startContainer,oldRange.startOffset)
+        range.setEnd(oldRange.startContainer,oldRange.startOffset)
+        this[RENDER_TO_DOM](range);
+
+        // move oldrange start to end of new range
+        oldRange.setStart(range.endContainer,range.endOffset)
+        oldRange.deleteContents();
     }
     setState(newState) {
         if (this.state == null || typeof this.state !="object") {
@@ -90,8 +103,13 @@ export const createElement= (type,attributes, ...children) => {
     }
     let insertChildren = (children)=> {
         for (let child of children) {
+            // <div>textnode</div>
             if (typeof child === 'string') {
                 child = new TextWrapper(child)
+            }
+            //<Board />
+            if(child === null) {
+                continue;
             }
             
             if(typeof child === "object" && child instanceof Array) {
